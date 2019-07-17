@@ -13,9 +13,10 @@ packages for analysis
 library(tidyverse)
 library(janitor)
 library(DataExplorer)
-library(SmartEDA)
-
-
+library(funModeling)
+library(Hmisc)
+library(psych)
+library(stringr)
 ```
 
 # Data Source  
@@ -27,8 +28,8 @@ ma_crimes <-
   na_if("#N/A") %>% 
   mutate(expungeable = replace(expungeable, expungeable != "Yes", "No"),
          fbi_category = replace(fbi_category, fbi_category == c("synthetic Narcotics – Manufactured Narcotics which can cause true drug addiction (Demerol, Methadones)"), c("Synthetic Narcotics – Manufactured Narcotics which can cause true drug addiction (Demerol, Methadones)")),
-         fbi_category = replace(fbi_category, fbi_category == c("forgery and Counterfeiting"), c("Forgery and Counterfeiting")))
-
+         fbi_category = replace(fbi_category, fbi_category == c("forgery and Counterfeiting"), c("Forgery and Counterfeiting"))) %>% 
+    select(-code) #remove "code" column, no value.
 ```
 
 So thus far, we've read in the data, converted the headers to snake case, and replaced the `#N/A`s with proper `NA`. I may return to this decision and find another way to replace those values.
@@ -67,11 +68,38 @@ glimpse(ma_crimes)
 ```
 
 
-#univariate analysis 
+# understand data properties
+### basic structure and metrics
+
+```{r}
+class(ma_crimes)
+names(ma_crimes)
+# plot_str(ma_crimes)
+introduce(ma_crimes)
+glimpse(ma_crimes) # or str(data) # tells you the structure of the obj.
+summary(ma_crimes)
+# describe(ma_crimes)
+profiling_num(ma_crimes)
+```
+
+
+
+# univariate analysis
+### analyze numerical variables - distibution
 
 ```{r}
 
+# plot_histogram(ma_crimes)     # no continuous features
+# plot_density(ma_crimes)         # no continuous features
+plot_bar(ma_crimes, 
+         maxcat = 50,
+         title = "categorical features",
+         theme = theme_minimal(),
+         ncol = 1,
+         nrow = 1)
+# plot_qq(ma_crimes)    # no continuous features
 ```
+
 
 
 
@@ -86,10 +114,70 @@ str(fbi_exp)
 ```
 
 
-visualize `fbi_exp`
+visualize `expungeable` by `penalty_type`
+
 ```{r}
+ma_crimes %>% 
+    count(penalty_type, expungeable, name = "count") %>% 
+    ggplot(aes(x = penalty_type, y = count, fill = expungeable)) +
+        geom_col(position = "dodge") +
+    ggtitle("Most misdemeanors are expungeable\nfelonies are Split") 
+```
+
+
+
+
+```{r}
+ma_crimes %>% 
+    count(fbi_category, expungeable, name = "count") %>% 
+    ggplot(aes(x = str_wrap(fbi_category, width = 50), y = count, fill = expungeable)) +
+        geom_col(position = "dodge") +
+            xlab("FBI Category") +
+    theme(axis.text.y = element_text(hjust = 1, size = 4),
+              legend.text = element_text(size = 7),
+              legend.position = "bottom") +     
+        # ggtitle("")  +
+        # xlab("") +
+        coord_flip() +
+    facet_wrap(~expungeable)
+```
+
+
+```{r}
+ma_crimes %>% 
+    count(fbi_category, expungeable, name = "count") %>% 
+    ggplot(aes(x = str_wrap(fbi_category, width = 50), y = count, fill = expungeable)) +
+        geom_col(position = "dodge") +
+            xlab("FBI Category") +
+    theme(axis.text.y = element_text(hjust = 1, size = 4),
+              legend.text = element_text(size = 7),
+              legend.position = "bottom") +     
+        # ggtitle("")  +
+        # xlab("") +
+        coord_flip() +
+    facet_wrap(~expungeable)
+```
+
+
+All Expungeable
+```{r}
+ma_crimes %>% 
+```
+
+
+```{r}
+ma_crimes %>% count(fbi_category, penalty_type, expungeable, name = "count") %>% 
+    ggplot(aes(x = str_wrap(fbi_category, width = 20), y = count, fill = factor(expungeable))) +
+    geom_col(stat = "identity", position = "dodge") +
+    xlab("FBI Category") + 
+    theme(axis.text.y = element_text(hjust = 1, size = 4),
+          legend.text = element_text(size = 7),
+          legend.position = "bottom") +     
+    facet_wrap(~penalty_type) +
+    coord_flip()
 
 ```
+
 
 Felony vs Misdemeanor
 ```{r}
@@ -99,10 +187,3 @@ fbi_exp %>% adorn_ns()
 
 
 ```
-
-```{r}
-
-ExpData(data = ma_crimes, type = 2)
-
-```
-
