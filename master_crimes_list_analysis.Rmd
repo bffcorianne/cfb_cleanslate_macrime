@@ -161,7 +161,27 @@ ma_crimes %>%
 
 All Expungeable
 ```{r}
-ma_crimes %>% 
+#expungeability look ups
+fbi_exp_n <-ma_crimes %>% filter(expungeable != "Yes") %>% distinct(fbi_category)
+fbi_exp_y <-  ma_crimes %>% filter(expungeable == "Yes") %>% distinct(fbi_category)
+
+
+# all expungeable categories
+ma_crimes %>% filter(fbi_category %in% fbi_exp_y[[1]])
+
+# all not-expungeable categories
+ma_crimes %>% filter(fbi_category %in% fbi_exp_n[[1]])
+
+# only expungeable
+ma_crimes %>% filter(fbi_category %in% fbi_exp_y[[1]] &
+                     !(fbi_category %in% fbi_exp_n[[1]]))
+
+
+# only not expungeable
+ma_crimes %>% filter(!(fbi_category %in% fbi_exp_y[[1]]) &
+                     fbi_category %in% fbi_exp_n[[1]])
+
+
 ```
 
 
